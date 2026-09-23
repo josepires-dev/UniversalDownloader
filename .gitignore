@@ -1,0 +1,12 @@
+# Third-party runtime binaries are downloaded separately.
+tools/*.exe
+
+# Per-request files must never be committed.
+storage/tmp/*
+!storage/tmp/.gitkeep
+
+# Local editor and OS files
+.env
+.env.*
+.DS_Store
+Thumbs.db
