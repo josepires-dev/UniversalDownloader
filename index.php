@@ -20,11 +20,16 @@ $config = require __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
         <header class="app-header">
             <div class="logo"><i class="fa-solid fa-cloud-arrow-down logo-icon" aria-hidden="true"></i><h1>Universal Downloader</h1></div>
             <p class="subtitle">Baixe vídeos e áudios do YouTube e galerias/fotos do Instagram.</p>
-            <span class="badge"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Modo Local</span>
+            <div class="header-badges"><span class="badge"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Modo Local</span><span class="badge badge-soft"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Sem nuvem</span></div>
         </header>
 
         <main class="main-content">
             <section class="glass-card downloader-card" aria-label="Preparar download">
+                <div class="download-modes" aria-label="Modos suportados">
+                    <span class="download-mode active"><i class="fa-solid fa-video" aria-hidden="true"></i> Vídeo MP4</span>
+                    <span class="download-mode"><i class="fa-solid fa-music" aria-hidden="true"></i> Áudio MP3</span>
+                    <span class="download-mode"><i class="fa-brands fa-instagram" aria-hidden="true"></i> Galerias</span>
+                </div>
                 <div id="urlSection" class="config-section">
                     <div class="form-group">
                         <label for="urlInput" class="form-label">Cole o link do vídeo/áudio:</label>
