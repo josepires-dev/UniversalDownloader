@@ -48,6 +48,11 @@ $config = require __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
                             <div class="file-info-container hidden" id="fileInfoContainer"><span class="file-name" id="fileNameDisplay"></span><button type="button" class="btn-remove-file" id="btnRemoveFile" aria-label="Remover ficheiro"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></div>
                         </div>
                     </div>
+                    <div class="trust-row" aria-label="Privacidade e compatibilidade">
+                        <span><i class="fa-solid fa-lock" aria-hidden="true"></i> Processamento local</span>
+                        <span><i class="fa-solid fa-clock" aria-hidden="true"></i> Temporários limpos</span>
+                        <span><i class="fa-solid fa-sliders" aria-hidden="true"></i> Qualidade configurável</span>
+                    </div>
                 </div>
 
                 <div id="configSection" class="config-section hidden">

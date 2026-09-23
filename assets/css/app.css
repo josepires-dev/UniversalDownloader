@@ -1023,3 +1023,55 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
     .download-modes { gap: 7px; padding-bottom: 18px; }
     .download-mode { padding: 11px 6px; font-size: 0.72rem; gap: 5px; }
 }
+
+
+/* Second-pass composition refinement */
+.app-container {
+    max-width: 1120px;
+}
+
+.glass-card {
+    padding: 34px;
+}
+
+.trust-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding-top: 2px;
+    color: rgba(255,255,255,0.42);
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+}
+
+.trust-row span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.trust-row i {
+    color: rgba(249,115,22,0.72);
+    font-size: 0.78rem;
+}
+
+@media (max-width: 720px) {
+    .app-container { max-width: 100%; }
+    .glass-card { padding: 26px 20px; }
+    .trust-row { grid-template-columns: 1fr; gap: 8px; }
+}
+
+
+@media (max-width: 550px) {
+    .logo {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .logo h1 {
+        text-align: center;
+        line-height: 1.05;
+    }
+}
