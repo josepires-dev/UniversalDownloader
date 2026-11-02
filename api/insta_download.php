@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 ini_set('display_errors', '0');
 error_reporting(0);
+set_time_limit(0);
 
 require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'InstaDownloader.php';
 $config = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config.php';

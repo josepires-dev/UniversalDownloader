@@ -1,69 +1,81 @@
-# UniversalDownloader
+# MultiSite Video Downloader — versão XAMPP
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Esta é uma reconstrução de raiz do projeto anexado para executar diretamente no **Apache e PHP do XAMPP**. Não utiliza Flask, Python, ambiente virtual nem `server.py` em execução.
 
-> Local PHP/Apache media downloader for XAMPP, Laragon, WAMP, or another Apache + PHP 8.1+ stack.
+A aplicação consulta metadados através do `yt-dlp`, apresenta miniatura, duração, autor e qualidades, permite baixar em **MP4** ou **MP3**, suporta playlists, aceita `cookies.txt` opcional e mantém histórico local no navegador.
 
-UniversalDownloader is a local-first utility for retrieving video and audio from supported public URLs through `yt-dlp`. It presents metadata before download, supports MP4 and MP3 output, handles playlists, and keeps download history only in the browser.
+## Componentes
 
-## Demo
+| Componente | Função | Necessário no XAMPP |
+|---|---|---|
+| `index.php` | Interface do downloader | Apache + PHP |
+| `api/info.php` | Consulta título, duração, miniatura e qualidades | PHP com `proc_open` |
+| `api/download.php` | Inicia o download e transmite o resultado | PHP com `proc_open` |
+| `lib/YtDlpService.php` | Validação, execução do yt-dlp, playlists, ZIP e limpeza | PHP + extensão ZIP |
+| `tools/yt-dlp.exe` | Extrator de vídeo e áudio para os sites suportados | Incluído |
+| `tools/ffmpeg.exe` | Junta fluxos de vídeo e áudio e converte MP3 | Incluído |
+| `storage/tmp/` | Diretório temporário por pedido | Escrita permitida ao Apache |
 
-![UniversalDownloader interface](docs/demo.png)
+## Instalação no XAMPP para Windows
 
-The interface is designed around a simple local workflow: paste a URL, inspect the media, choose the output format and save the resulting file. Cookies are optional and are accepted only when provided by the user for their own session.
+1. Extraia a pasta `multisite-video-downloader-xampp` para `C:\xampp\htdocs\`.
+2. Confirme que existem `yt-dlp.exe` e `ffmpeg.exe` em `C:\xampp\htdocs\multisite-video-downloader-xampp\tools\`.
+3. Abra `C:\xampp\php\php.ini` e ative a linha `extension=zip`.
+4. Na diretiva `disable_functions`, confirme que `proc_open`, `proc_close`, `proc_get_status` e `proc_terminate` não estão bloqueadas.
+5. Inicie ou reinicie o Apache no painel do XAMPP. MySQL não é necessário.
+6. Abra `http://localhost/multisite-video-downloader-xampp/`.
 
-> **Local-use notice:** This application is intended for personal use through Apache on a local machine. Do not expose it directly to the public Internet without a dedicated security review, authentication and an appropriate legal review of the content sources.
+## Utilização
 
-## Features
+Cole uma URL pública HTTP ou HTTPS e selecione a seta para obter os metadados. A aplicação mostra título, miniatura, duração e resoluções identificadas. Escolha **Vídeo (MP4)** ou **Áudio (MP3)** e inicie o download. Para MP4, a aplicação privilegia vídeo H.264 e áudio AAC, formatos compatíveis com os leitores comuns do Windows, e devolve apenas o caminho final confirmado pelo yt-dlp após a combinação de mídia. O ficheiro é guardado automaticamente com o título extraído do vídeo, nunca com o nome genérico `video.mp4`.
 
-| Area | Supported behavior |
+| Opção | Resultado |
 |---|---|
-| Video | MP4 downloads with selectable quality when supported by the source |
-| Audio | MP3 extraction with FFmpeg conversion |
-| Sources | Supported public sources handled by the installed `yt-dlp` build, plus Instagram gallery support |
-| Playlists | Start position, item limit, order selection and ZIP delivery |
-| Metadata | Title, thumbnail, duration, uploader and available qualities before download |
-| Privacy | Temporary request-specific files are removed after processing |
-| History | Download history remains in browser `localStorage` and can be cleared |
-| Cookies | Optional `cookies.txt`, limited in size and kept in temporary storage only |
+| Vídeo + Melhor qualidade | Melhor combinação de vídeo e áudio disponível, entregue em MP4 quando possível |
+| Vídeo + resolução | Melhor vídeo até à resolução escolhida, com áudio, entregue em MP4 quando possível |
+| Áudio | Melhor áudio disponível convertido para MP3, com qualidade configurada para 320 kbps |
+| Playlist/canal | Pode definir primeiro item, limite e ordem; vários ficheiros são devolvidos num ZIP |
+| `cookies.txt` | Opcional; use apenas cookies exportados da sua própria sessão quando um site exigir autenticação |
 
-## Installation on XAMPP for Windows
+O histórico fica somente no `localStorage` do navegador e pode ser limpo pelo botão da página. Os cookies carregados e os ficheiros obtidos são colocados numa pasta temporária exclusiva e apagados após a resposta ser enviada.
 
-1. Extract the repository into `C:\xampp\htdocs\UniversalDownloader`.
-2. Download the required runtime tools from their official sources and place them in the directories described in [`tools/README.md`](tools/README.md).
-3. In `C:\xampp\php\php.ini`, enable `extension=zip`.
-4. Confirm that `proc_open`, `proc_close`, `proc_get_status` and `proc_terminate` are not disabled.
-5. Start or restart Apache from the XAMPP control panel.
-6. Open `http://localhost/UniversalDownloader/` in your browser.
+## Segurança e limites
 
-MySQL is not required. The temporary directory under `storage/tmp/` must be writable by Apache.
+A versão PHP aceita apenas URLs HTTP/HTTPS públicas e recusa `localhost`, domínios `.local` e endereços IP privados/reservados. Cada comando é montado com argumentos escapados individualmente. A aplicação limita os cookies a 2 MB, impõe tempo máximo de processamento e limita cada pedido de playlist a 500 itens.
 
-## Usage
+O acesso HTTP direto a `lib/`, `tools/` e `storage/` é bloqueado por ficheiros `.htaccess`. Mantenha a aplicação apenas em `localhost`; não exponha o Apache à Internet nem reencaminhe portas do router para este utilitário.
 
-Paste a public HTTP or HTTPS URL and select the arrow to retrieve its metadata. Choose **Video (MP4)** or **Audio (MP3)**, select the desired quality when applicable, and start the download. Playlist options become available when the source exposes multiple entries.
+## Diagnóstico
 
-The browser history is local to the current browser and can be cleared from the interface. Uploaded cookies and generated files are stored in request-specific temporary directories and removed after the response is delivered.
+| Sintoma | Causa provável | Correção |
+|---|---|---|
+| `yt-dlp.exe` não encontrado | Extração incompleta ou ficheiro apagado | Extraia novamente o pacote e confirme `tools/yt-dlp.exe` |
+| Falha ao juntar áudio ao MP4 ou converter MP3 | FFmpeg ausente | Confirme `tools/ffmpeg.exe` |
+| Erro ao iniciar o extrator | `proc_open` bloqueado pelo PHP | Retire as funções necessárias de `disable_functions` e reinicie Apache |
+| Erro ao criar ZIP | Extensão ZIP desativada | Ative `extension=zip` no `php.ini` |
+| YouTube — HTTP 403 | O YouTube recusou o fluxo de mídia; a app tenta automaticamente um MP4 de compatibilidade | Atualize a página do vídeo no navegador e carregue um `cookies.txt` recente da sua própria sessão; alguns vídeos podem exigir PO Token do YouTube |
+| Sem mídia obtida | URL inválida, conteúdo privado, bloqueado ou não suportado | Confirme a URL, use `cookies.txt` da sua própria conta se necessário e atualize o yt-dlp |
+| Sem escrita em temporários | Apache sem permissão em `storage/tmp/` | Dê permissão de escrita à conta que executa o Apache |
 
-## Security and limits
-
-The application accepts only public HTTP/HTTPS URLs and rejects localhost, `.local` domains and private or reserved IP ranges. Command arguments are escaped individually, cookies are size-limited, processing has a timeout, and playlist requests have a maximum item count.
-
-Direct HTTP access to `lib/`, `tools/` and `storage/` is blocked with `.htaccess` rules. Keep the application on `localhost`; do not forward router ports to this utility.
-
-## Project structure
+## Estrutura entregue
 
 ```text
-UniversalDownloader/
-├── api/                    # Metadata and download endpoints
-├── assets/                 # CSS and browser-side JavaScript
-├── lib/                    # yt-dlp and Instagram service classes
-├── storage/tmp/            # Request-specific temporary files
-├── tools/                  # Local runtime binaries, not committed
+multisite-video-downloader-xampp/
+├── api/
+│   ├── download.php
+│   └── info.php
+├── assets/
+│   ├── css/app.css
+│   └── js/app.js
+├── lib/YtDlpService.php
+├── storage/tmp/.gitkeep
+├── tools/
+│   ├── ffmpeg.exe
+│   └── yt-dlp.exe
+├── .htaccess
 ├── config.php
 ├── index.php
 └── README.md
 ```
 
-## License
-
-The source code is released under the [MIT License](LICENSE). Runtime executables are third-party software and remain subject to their respective licenses.
+O pacote inclui o binário nightly oficial do `yt-dlp` para Windows. Não inclui sessões, cookies, cache Python, bytecode nem ambiente virtual do projeto original.

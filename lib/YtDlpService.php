@@ -34,7 +34,6 @@ final class YtDlpService
                 '--dump-single-json',
                 '--skip-download',
                 '--no-warnings',
-                '--no-call-home',
                 '--playlist-end',
                 '1',
             ];
@@ -77,10 +76,15 @@ final class YtDlpService
                 '--output', $outputTemplate,
                 '--no-part',
                 '--no-warnings',
-                '--no-call-home',
                 '--ffmpeg-location', (string) $this->config['ffmpeg_location'],
                 '--print', 'after_move:filepath',
                 '--playlist-start', (string) $playlistStart,
+                '--min-sleep-interval', (string) ($this->config['ytdlp_min_sleep'] ?? 3),
+                '--max-sleep-interval', (string) ($this->config['ytdlp_max_sleep'] ?? 12),
+                '--sleep-requests', '1',
+                '--embed-metadata',
+                '--embed-thumbnail',
+                '--convert-thumbnails', 'jpg',
             ];
 
             if ($playlistLimit !== null) {
@@ -276,8 +280,9 @@ final class YtDlpService
             return null;
         }
         $limit = $this->validatePositiveInteger($value, 1, 'O limite da playlist é inválido.');
-        if ($limit > (int) $this->config['max_playlist_items']) {
-            throw new MediaDownloadException('O limite máximo de itens por pedido é ' . (string) $this->config['max_playlist_items'] . '.', 400);
+        $maxItems = (int) ($this->config['max_playlist_items'] ?? 0);
+        if ($maxItems > 0 && $limit > $maxItems) {
+            throw new MediaDownloadException('O limite máximo de itens por pedido é ' . (string) $maxItems . '.', 400);
         }
         return $limit;
     }
@@ -400,7 +405,8 @@ final class YtDlpService
                 $reportedExitCode = isset($status['exitcode']) ? (int) $status['exitcode'] : null;
                 break;
             }
-            if ((microtime(true) - $startedAt) >= (int) $this->config['command_timeout_seconds']) {
+            $timeout = (int) ($this->config['command_timeout_seconds'] ?? 0);
+            if ($timeout > 0 && (microtime(true) - $startedAt) >= $timeout) {
                 @proc_terminate($process);
                 fclose($pipes[1]);
                 fclose($pipes[2]);

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <title>Universal Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <strong>Universal Downloader</strong>
+    <span id="server" class="dot" data-on="unknown" title="Estado do servidor local"></span>
+  </header>
+  <p id="pageLabel" class="label">A ler o separador...</p>
+
+  <section id="unsupportedPanel" class="hidden">
+    <p>Abre uma publicação do Instagram ou um vídeo do YouTube.</p>
+  </section>
+
+  <section id="instagramPanel" class="hidden">
+    <button id="instagramDownload" class="primary" type="button"><span>Baixar esta publicação</span></button>
+    <p class="hint">No feed, usa o botão redondo sobre a publicação. Podes arrastá-lo nas páginas de post/reel/story.</p>
+  </section>
+
+  <section id="youtubePanel" class="hidden">
+    <button id="analyzeVideo" type="button">Carregar informações</button>
+    <div id="youtubeOptions" class="hidden">
+      <p id="videoTitle" class="title"></p>
+      <label>Qualidade <select id="qualitySelect"></select></label>
+      <div id="playlistOptions" class="hidden grid">
+        <label>Início <input id="playlistStart" type="number" min="1" value="1"></label>
+        <label>Limite <input id="playlistLimit" type="number" min="1" placeholder="todos"></label>
+        <label class="check"><input id="playlistReverse" type="checkbox"> Ordem inversa</label>
+      </div>
+      <div class="row">
+        <button id="downloadVideo" class="primary" type="button">Vídeo MP4</button>
+        <button id="downloadAudio" class="primary" type="button">Áudio MP3</button>
+      </div>
+    </div>
+  </section>
+
+  <progress id="bar" class="hidden" max="100" value="0"></progress>
+  <p id="status" role="status" aria-live="polite" data-kind="info"></p>
+  <script src="diagnostics.js"></script>
+  <script src="shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

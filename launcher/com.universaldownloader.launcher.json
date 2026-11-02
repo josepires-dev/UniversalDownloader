@@ -1,0 +1,9 @@
+{
+  "name": "com.universaldownloader.launcher",
+  "description": "Universal Downloader launcher",
+  "path": "C:\\Users\\josepires\\Documents\\Projetos\\UniversalDownloader\\launcher\\ud-launcher.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://cnabpnhniaiphpafhfiklppjnjbdigok/"
+  ]
+}

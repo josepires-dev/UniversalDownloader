@@ -118,7 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchBtn.disabled = true;
 
         try {
-            const response = await fetch('api/info.php', {
+            const apiEndpoint = 'api/info.php'; // Supported on both PHP & Node
+            const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url, cookies_text: uploadedCookiesText })
@@ -142,15 +143,22 @@ document.addEventListener('DOMContentLoaded', () => {
         processingState.classList.remove('hidden');
         const sourceLabel = getSourceLabel(url);
         progressTitle.textContent = `A transferir conteúdo de ${sourceLabel}...`;
-        progressSub.textContent = 'A analisar o conteúdo para identificar se é imagem, vídeo ou galeria.';
-        progressBar.style.width = '50%';
+        progressSub.textContent = 'A analisar o conteúdo e a aplicar pausas de proteção anti-bot.';
+        progressBar.style.width = '10%';
         fetchBtn.disabled = true;
 
+        const payload = { url, cookies_text: uploadedCookiesText };
+
         try {
+            // Try Node streaming endpoint first
+            const streamed = await tryStreamDownload('/api/insta-download', payload, 'galeria', sourceLabel);
+            if (streamed) return;
+
+            // Fallback for standard PHP
             const response = await fetch('api/insta_download.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, cookies_text: uploadedCookiesText })
+                body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error(await readServerError(response));
             
@@ -160,17 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             progressBar.style.width = '100%';
             
             const contentDisposition = response.headers.get('content-disposition');
-            let filename = getFilename(contentDisposition);
-            if (!filename || filename === 'download' || !filename.includes('.')) {
-                const contentType = (response.headers.get('content-type') || blob.type || '').toLowerCase();
-                if (contentType.includes('zip')) filename = 'galeria.zip';
-                else if (contentType.includes('jpeg') || contentType.includes('jpg')) filename = 'imagem.jpg';
-                else if (contentType.includes('png')) filename = 'imagem.png';
-                else filename = 'video.mp4';
-            }
-            const contentKind = getContentKind(response.headers.get('content-type') || blob.type, filename);
-            progressTitle.textContent = `A preparar ${contentKind} de ${sourceLabel}...`;
-            progressSub.textContent = 'A preparar o ficheiro para guardar no navegador.';
+            let filename = getFilename(contentDisposition) || 'galeria.zip';
             
             releaseDownloadUrl();
             currentDownloadUrl = URL.createObjectURL(blob);
@@ -195,8 +193,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateVideoInfo(info) {
         videoThumbnail.src = typeof info.thumbnail === 'string' && info.thumbnail !== '' ? info.thumbnail : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="640" height="360"%3E%3Crect width="100%25" height="100%25" fill="%23111827"/%3E%3C/svg%3E';
-        videoDuration.textContent = typeof info.duration === 'string' ? info.duration : '00:00';
-        videoTitle.textContent = typeof info.title === 'string' ? info.title : 'Vídeo sem título';
+        
+        if (info.is_playlist) {
+            videoDuration.textContent = 'PLAYLIST';
+            videoTitle.textContent = '[Playlist] ' + (typeof info.title === 'string' ? info.title : 'Sem título');
+        } else {
+            videoDuration.textContent = typeof info.duration === 'string' ? info.duration : '00:00';
+            videoTitle.textContent = typeof info.title === 'string' ? info.title : 'Vídeo sem título';
+        }
+        
         videoUploader.replaceChildren();
         const icon = document.createElement('i');
         icon.className = 'fa-regular fa-user';
@@ -229,12 +234,106 @@ document.addEventListener('DOMContentLoaded', () => {
         const sourceLabel = getSourceLabel(videoData.original_url);
         const contentKind = selectedType === 'audio' ? 'áudio' : (videoData.is_playlist ? 'playlist de vídeos' : 'vídeo');
         progressTitle.textContent = `A transferir ${contentKind} de ${sourceLabel}...`;
-        progressSub.textContent = videoData.is_playlist
-            ? 'A preparar os itens selecionados e a criar a galeria de ficheiros.'
-            : 'A preparar o ficheiro. Isto pode demorar alguns minutos, dependendo do tamanho.';
+        progressSub.textContent = 'Iniciando transferência...';
         progressBar.style.width = '0%';
         downloadBtn.disabled = true;
 
+        const downloadPayload = {
+            url: videoData.original_url,
+            type: selectedType,
+            quality: qualitySelect.value,
+            download_name: buildDownloadName(videoData.title, selectedType),
+            cookies_text: uploadedCookiesText,
+            playlist_start: playlistStart.value ? Number.parseInt(playlistStart.value, 10) : 1,
+            playlist_limit: playlistLimit.value ? Number.parseInt(playlistLimit.value, 10) : null,
+            playlist_reverse: playlistReverse.checked
+        };
+
+        try {
+            // 1. Try Node.js Realtime SSE Streaming Download first
+            const streamed = await tryStreamDownload('/api/stream-download', downloadPayload, contentKind, sourceLabel);
+            if (streamed) return;
+
+            // 2. Fallback to standard PHP download endpoint
+            await startPhpDownload(downloadPayload, sourceLabel);
+        } catch (error) {
+            processingState.classList.add('hidden');
+            configSection.classList.remove('hidden');
+            window.alert(error instanceof Error ? error.message : 'Ocorreu um erro durante o download.');
+        } finally {
+            downloadBtn.disabled = false;
+        }
+    }
+
+    async function tryStreamDownload(endpoint, payload, contentKind, sourceLabel) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok || !response.body || response.headers.get('content-type')?.includes('application/json')) {
+                return false; // Not a stream / fallback to PHP
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const chunks = buffer.split('\n\n');
+                buffer = chunks.pop() || '';
+
+                for (const chunk of chunks) {
+                    const eventMatch = chunk.match(/event:\s*(\w+)/);
+                    const dataMatch = chunk.match(/data:\s*(.+)/);
+                    if (!eventMatch || !dataMatch) continue;
+
+                    const event = eventMatch[1];
+                    const data = JSON.parse(dataMatch[1]);
+
+                    if (event === 'status') {
+                        progressSub.textContent = data.message || 'Processando...';
+                    } else if (event === 'progress') {
+                        if (typeof data.percent === 'number') {
+                            progressBar.style.width = `${Math.min(data.percent, 99)}%`;
+                            progressTitle.textContent = `A transferir ${contentKind} (${Math.round(data.percent)}%)...`;
+                        }
+                        if (data.text) progressSub.textContent = data.text;
+                    } else if (event === 'error') {
+                        throw new Error(data.error || 'Erro no download');
+                    } else if (event === 'complete') {
+                        progressBar.style.width = '100%';
+                        progressTitle.textContent = 'Download Concluído!';
+                        
+                        releaseDownloadUrl();
+                        fileDownloadLink.href = data.downloadUrl;
+                        fileDownloadLink.setAttribute('download', data.filename);
+                        successText.textContent = `O ficheiro “${data.filename}” está pronto para guardar.`;
+
+                        window.setTimeout(() => {
+                            fileDownloadLink.click();
+                            processingState.classList.add('hidden');
+                            successState.classList.remove('hidden');
+                            addHistoryItem(videoData?.title || data.filename, data.filename, selectedType);
+                        }, 400);
+                        return true;
+                    }
+                }
+            }
+            return true;
+        } catch (err) {
+            console.warn('Streaming endpoint failed or unavailable, falling back to PHP:', err);
+            return false;
+        }
+    }
+
+    async function startPhpDownload(payload, sourceLabel) {
         let progressValue = 0;
         const progressInterval = window.setInterval(() => {
             if (progressValue < 90) {
@@ -247,16 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('api/download.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    url: videoData.original_url,
-                    type: selectedType,
-                    quality: qualitySelect.value,
-                    download_name: buildDownloadName(videoData.title, selectedType),
-                    cookies_text: uploadedCookiesText,
-                    playlist_start: playlistStart.value ? Number.parseInt(playlistStart.value, 10) : 1,
-                    playlist_limit: playlistLimit.value ? Number.parseInt(playlistLimit.value, 10) : null,
-                    playlist_reverse: playlistReverse.checked
-                })
+                body: JSON.stringify(payload)
             });
             if (!response.ok) throw new Error(await readServerError(response));
             const blob = await response.blob();
@@ -264,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             window.clearInterval(progressInterval);
             progressBar.style.width = '100%';
-            const filename = getFilename(response.headers.get('content-disposition')) || buildDownloadName(videoData.title, selectedType);
+            const filename = getFilename(response.headers.get('content-disposition')) || payload.download_name;
             releaseDownloadUrl();
             currentDownloadUrl = window.URL.createObjectURL(blob);
             fileDownloadLink.href = currentDownloadUrl;
@@ -275,15 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 fileDownloadLink.click();
                 processingState.classList.add('hidden');
                 successState.classList.remove('hidden');
-                addHistoryItem(videoData.title || filename, filename, selectedType);
+                addHistoryItem(payload.download_name, filename, selectedType);
             }, 550);
-        } catch (error) {
-            processingState.classList.add('hidden');
-            configSection.classList.remove('hidden');
-            window.alert(error instanceof Error ? error.message : 'Ocorreu um erro durante o download.');
         } finally {
             window.clearInterval(progressInterval);
-            downloadBtn.disabled = false;
         }
     }
 
@@ -436,16 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (_) {
             return 'este site';
         }
-    }
-
-    function getContentKind(contentType, filename) {
-        const type = String(contentType || '').toLowerCase();
-        const extension = String(filename || '').toLowerCase().split('.').pop();
-        if (type.includes('zip') || extension === 'zip') return 'a galeria';
-        if (type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(extension)) return 'a imagem';
-        if (type.startsWith('audio/') || ['mp3', 'm4a', 'wav', 'opus'].includes(extension)) return 'o áudio';
-        if (type.startsWith('video/') || ['mp4', 'webm', 'mov', 'mkv'].includes(extension)) return 'o vídeo';
-        return 'o conteúdo';
     }
 
     function releaseDownloadUrl() {

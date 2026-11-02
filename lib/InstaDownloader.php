@@ -246,14 +246,12 @@ final class Downloader
                 $command[] = '--cookies-from-browser';
                 $command[] = $browser;
             }
-            if ($this->isProfileUrl($url)) {
-                $command[] = '--sleep';
-                $command[] = (string) ($this->config['profile_pause_seconds'] ?? 2);
-                $command[] = '--sleep-request';
-                $command[] = (string) ($this->config['request_pause_seconds'] ?? 1);
-                $command[] = '--sleep-429';
-                $command[] = (string) ($this->config['rate_limit_pause_seconds'] ?? 10);
-            }
+            $command[] = '--sleep';
+            $command[] = (string) ($this->config['profile_pause_seconds'] ?? 2);
+            $command[] = '--sleep-request';
+            $command[] = (string) ($this->config['request_pause_seconds'] ?? 1);
+            $command[] = '--sleep-429';
+            $command[] = (string) ($this->config['rate_limit_pause_seconds'] ?? 10);
         } else {
             $command[] = '--paths';
             $command[] = $taskDir;
@@ -335,7 +333,7 @@ final class Downloader
             if (!$status['running']) {
                 break;
             }
-            if ((microtime(true) - $startedAt) >= $timeout) {
+            if ($timeout > 0 && (microtime(true) - $startedAt) >= $timeout) {
                 @proc_terminate($process);
                 fclose($pipes[1]);
                 fclose($pipes[2]);

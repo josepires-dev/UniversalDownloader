@@ -7,7 +7,7 @@ $config = require __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= htmlspecialchars((string) $config['app_name'], ENT_QUOTES, 'UTF-8') ?></title>
+    <title>Universal Downloader</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,16 +20,11 @@ $config = require __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
         <header class="app-header">
             <div class="logo"><i class="fa-solid fa-cloud-arrow-down logo-icon" aria-hidden="true"></i><h1>Universal Downloader</h1></div>
             <p class="subtitle">Baixe vídeos e áudios do YouTube e galerias/fotos do Instagram.</p>
-            <div class="header-badges"><span class="badge"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Modo Local</span><span class="badge badge-soft"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Sem nuvem</span></div>
+            <span class="badge"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Modo Local</span>
         </header>
 
         <main class="main-content">
             <section class="glass-card downloader-card" aria-label="Preparar download">
-                <div class="download-modes" aria-label="Modos suportados">
-                    <span class="download-mode active"><i class="fa-solid fa-video" aria-hidden="true"></i> Vídeo MP4</span>
-                    <span class="download-mode"><i class="fa-solid fa-music" aria-hidden="true"></i> Áudio MP3</span>
-                    <span class="download-mode"><i class="fa-brands fa-instagram" aria-hidden="true"></i> Galerias</span>
-                </div>
                 <div id="urlSection" class="config-section">
                     <div class="form-group">
                         <label for="urlInput" class="form-label">Cole o link do vídeo/áudio:</label>
@@ -47,11 +42,6 @@ $config = require __DIR__ . DIRECTORY_SEPARATOR . 'config.php';
                             <input type="file" id="cookiesFileInput" accept=".txt,text/plain" class="hidden-file-input">
                             <div class="file-info-container hidden" id="fileInfoContainer"><span class="file-name" id="fileNameDisplay"></span><button type="button" class="btn-remove-file" id="btnRemoveFile" aria-label="Remover ficheiro"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></div>
                         </div>
-                    </div>
-                    <div class="trust-row" aria-label="Privacidade e compatibilidade">
-                        <span><i class="fa-solid fa-lock" aria-hidden="true"></i> Processamento local</span>
-                        <span><i class="fa-solid fa-clock" aria-hidden="true"></i> Temporários limpos</span>
-                        <span><i class="fa-solid fa-sliders" aria-hidden="true"></i> Qualidade configurável</span>
                     </div>
                 </div>
 
