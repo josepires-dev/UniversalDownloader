@@ -28,7 +28,7 @@ Built on [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.
 ## Quick start (Windows + XAMPP)
 
 1. Copy the project folder to `C:\xampp\htdocs\UniversalDownloader\`.
-2. Check that `tools\yt-dlp.exe` and `tools\ffmpeg.exe` exist (see [Components](#components)).
+2. Download `yt-dlp.exe` and `ffmpeg.exe` (and optionally `gallery-dl.exe` for Instagram galleries) from their official sources and place them in `tools\`. Links are in [tools/README.md](tools/README.md).
 3. In `C:\xampp\php\php.ini`, enable `extension=zip` and make sure `proc_open`, `proc_close`, `proc_get_status` and `proc_terminate` are **not** in `disable_functions`.
 4. Start (or restart) Apache from the XAMPP control panel. MySQL is not needed.
 5. Open `http://localhost/UniversalDownloader/`.
@@ -55,8 +55,8 @@ Paste a public URL and press the arrow to fetch metadata. Choose **Video (MP4)**
 | `api/info.php` | Fetches title, duration, thumbnail and qualities |
 | `api/download.php` | Starts the download and streams the result |
 | `lib/YtDlpService.php` | Validation, yt-dlp execution, playlists, ZIP and cleanup |
-| `tools/yt-dlp.exe` | Extractor for the supported sites |
-| `tools/ffmpeg.exe` | Merges video/audio and converts to MP3 |
+| `tools/yt-dlp.exe` | Extractor for the supported sites (download separately) |
+| `tools/ffmpeg.exe` | Merges video/audio and converts to MP3 (download separately) |
 | `storage/tmp/` | Per-request temporary directory (Apache needs write access) |
 
 ## Security
@@ -69,8 +69,8 @@ Use it only for content you have the right to download.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `yt-dlp.exe` not found | Incomplete extraction or deleted file | Re-extract the package and check `tools/yt-dlp.exe` |
-| Cannot merge audio into MP4 / convert to MP3 | FFmpeg missing | Check `tools/ffmpeg.exe` |
+| `yt-dlp.exe` not found | Executable not downloaded yet | Get it from the official yt-dlp releases and place it in `tools/` |
+| Cannot merge audio into MP4 / convert to MP3 | FFmpeg missing | Place `ffmpeg.exe` in `tools/` |
 | Extractor fails to start | `proc_open` blocked by PHP | Remove it from `disable_functions`, restart Apache |
 | Error creating ZIP | ZIP extension disabled | Enable `extension=zip` in `php.ini` |
 | YouTube HTTP 403 | Media stream refused; the app retries a compatibility MP4 | Reload the video page in your browser and upload a fresh `cookies.txt` from your own session; some videos may require a YouTube PO Token |
