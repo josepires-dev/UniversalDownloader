@@ -1,81 +1,89 @@
-# MultiSite Video Downloader — versão XAMPP
+# UniversalDownloader
 
-Esta é uma reconstrução de raiz do projeto anexado para executar diretamente no **Apache e PHP do XAMPP**. Não utiliza Flask, Python, ambiente virtual nem `server.py` em execução.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![PHP](https://img.shields.io/badge/PHP-8.x-777bb4)
+![Powered by yt-dlp](https://img.shields.io/badge/powered%20by-yt--dlp-red)
+![Platform](https://img.shields.io/badge/platform-Windows%20%2B%20XAMPP-blue)
 
-A aplicação consulta metadados através do `yt-dlp`, apresenta miniatura, duração, autor e qualidades, permite baixar em **MP4** ou **MP3**, suporta playlists, aceita `cookies.txt` opcional e mantém histórico local no navegador.
+> Self-hosted video and audio downloader for Apache + PHP (XAMPP). Paste a public URL, pick **MP4** or **MP3**, download. Playlists come back as a ZIP.
 
-## Componentes
+Built on [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org/). No Python, Flask, virtualenv or background server: just Apache and PHP.
 
-| Componente | Função | Necessário no XAMPP |
-|---|---|---|
-| `index.php` | Interface do downloader | Apache + PHP |
-| `api/info.php` | Consulta título, duração, miniatura e qualidades | PHP com `proc_open` |
-| `api/download.php` | Inicia o download e transmite o resultado | PHP com `proc_open` |
-| `lib/YtDlpService.php` | Validação, execução do yt-dlp, playlists, ZIP e limpeza | PHP + extensão ZIP |
-| `tools/yt-dlp.exe` | Extrator de vídeo e áudio para os sites suportados | Incluído |
-| `tools/ffmpeg.exe` | Junta fluxos de vídeo e áudio e converte MP3 | Incluído |
-| `storage/tmp/` | Diretório temporário por pedido | Escrita permitida ao Apache |
+## Demo
 
-## Instalação no XAMPP para Windows
+![UniversalDownloader interface](docs/demo.png)
 
-1. Extraia a pasta `multisite-video-downloader-xampp` para `C:\xampp\htdocs\`.
-2. Confirme que existem `yt-dlp.exe` e `ffmpeg.exe` em `C:\xampp\htdocs\multisite-video-downloader-xampp\tools\`.
-3. Abra `C:\xampp\php\php.ini` e ative a linha `extension=zip`.
-4. Na diretiva `disable_functions`, confirme que `proc_open`, `proc_close`, `proc_get_status` e `proc_terminate` não estão bloqueadas.
-5. Inicie ou reinicie o Apache no painel do XAMPP. MySQL não é necessário.
-6. Abra `http://localhost/multisite-video-downloader-xampp/`.
+## Features
 
-## Utilização
+- **Metadata preview**: title, thumbnail, duration, author and available qualities before downloading.
+- **MP4 or MP3**: MP4 prefers H.264 + AAC for compatibility with common Windows players; MP3 is encoded at 320 kbps.
+- **Quality selection**: best available or capped at a chosen resolution.
+- **Playlists and channels**: choose first item, limit and order; multiple files are delivered as a ZIP (up to 500 items per request).
+- **Real file names**: files are saved with the video title, never a generic `video.mp4`.
+- **Optional `cookies.txt`**: use cookies exported from your own session when a site requires login.
+- **Local history** kept only in your browser (`localStorage`), clearable with one click.
+- **Brave/Chromium extension** included in `UniversalDownloader-Brave-Extension/`.
+- **Safe by default**: only public HTTP/HTTPS URLs; `localhost`, `.local` and private/reserved IPs are rejected; commands are built with individually escaped arguments; temporary files are deleted after each response.
 
-Cole uma URL pública HTTP ou HTTPS e selecione a seta para obter os metadados. A aplicação mostra título, miniatura, duração e resoluções identificadas. Escolha **Vídeo (MP4)** ou **Áudio (MP3)** e inicie o download. Para MP4, a aplicação privilegia vídeo H.264 e áudio AAC, formatos compatíveis com os leitores comuns do Windows, e devolve apenas o caminho final confirmado pelo yt-dlp após a combinação de mídia. O ficheiro é guardado automaticamente com o título extraído do vídeo, nunca com o nome genérico `video.mp4`.
+## Quick start (Windows + XAMPP)
 
-| Opção | Resultado |
+1. Copy the project folder to `C:\xampp\htdocs\UniversalDownloader\`.
+2. Check that `tools\yt-dlp.exe` and `tools\ffmpeg.exe` exist (see [Components](#components)).
+3. In `C:\xampp\php\php.ini`, enable `extension=zip` and make sure `proc_open`, `proc_close`, `proc_get_status` and `proc_terminate` are **not** in `disable_functions`.
+4. Start (or restart) Apache from the XAMPP control panel. MySQL is not needed.
+5. Open `http://localhost/UniversalDownloader/`.
+
+`instalar.bat` is included to help with the initial setup.
+
+## Usage
+
+Paste a public URL and press the arrow to fetch metadata. Choose **Video (MP4)** or **Audio (MP3)**, pick a quality, and start the download.
+
+| Option | Result |
 |---|---|
-| Vídeo + Melhor qualidade | Melhor combinação de vídeo e áudio disponível, entregue em MP4 quando possível |
-| Vídeo + resolução | Melhor vídeo até à resolução escolhida, com áudio, entregue em MP4 quando possível |
-| Áudio | Melhor áudio disponível convertido para MP3, com qualidade configurada para 320 kbps |
-| Playlist/canal | Pode definir primeiro item, limite e ordem; vários ficheiros são devolvidos num ZIP |
-| `cookies.txt` | Opcional; use apenas cookies exportados da sua própria sessão quando um site exigir autenticação |
+| Video + best quality | Best video + audio combination, delivered as MP4 when possible |
+| Video + resolution | Best video up to the chosen resolution, with audio |
+| Audio | Best audio converted to MP3 (320 kbps) |
+| Playlist / channel | Set first item, limit and order; several files are returned as a ZIP |
+| `cookies.txt` | Optional; only use cookies from your own session |
 
-O histórico fica somente no `localStorage` do navegador e pode ser limpo pelo botão da página. Os cookies carregados e os ficheiros obtidos são colocados numa pasta temporária exclusiva e apagados após a resposta ser enviada.
+## Components
 
-## Segurança e limites
+| Component | Role |
+|---|---|
+| `index.php` | Web interface |
+| `api/info.php` | Fetches title, duration, thumbnail and qualities |
+| `api/download.php` | Starts the download and streams the result |
+| `lib/YtDlpService.php` | Validation, yt-dlp execution, playlists, ZIP and cleanup |
+| `tools/yt-dlp.exe` | Extractor for the supported sites |
+| `tools/ffmpeg.exe` | Merges video/audio and converts to MP3 |
+| `storage/tmp/` | Per-request temporary directory (Apache needs write access) |
 
-A versão PHP aceita apenas URLs HTTP/HTTPS públicas e recusa `localhost`, domínios `.local` e endereços IP privados/reservados. Cada comando é montado com argumentos escapados individualmente. A aplicação limita os cookies a 2 MB, impõe tempo máximo de processamento e limita cada pedido de playlist a 500 itens.
+## Security
 
-O acesso HTTP direto a `lib/`, `tools/` e `storage/` é bloqueado por ficheiros `.htaccess`. Mantenha a aplicação apenas em `localhost`; não exponha o Apache à Internet nem reencaminhe portas do router para este utilitário.
+This tool is meant for **local use only**. Direct HTTP access to `lib/`, `tools/` and `storage/` is blocked via `.htaccess`, but do **not** expose Apache to the Internet or forward router ports to it. Cookies are limited to 2 MB and every request has a processing timeout.
 
-## Diagnóstico
+Use it only for content you have the right to download.
 
-| Sintoma | Causa provável | Correção |
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
 |---|---|---|
-| `yt-dlp.exe` não encontrado | Extração incompleta ou ficheiro apagado | Extraia novamente o pacote e confirme `tools/yt-dlp.exe` |
-| Falha ao juntar áudio ao MP4 ou converter MP3 | FFmpeg ausente | Confirme `tools/ffmpeg.exe` |
-| Erro ao iniciar o extrator | `proc_open` bloqueado pelo PHP | Retire as funções necessárias de `disable_functions` e reinicie Apache |
-| Erro ao criar ZIP | Extensão ZIP desativada | Ative `extension=zip` no `php.ini` |
-| YouTube — HTTP 403 | O YouTube recusou o fluxo de mídia; a app tenta automaticamente um MP4 de compatibilidade | Atualize a página do vídeo no navegador e carregue um `cookies.txt` recente da sua própria sessão; alguns vídeos podem exigir PO Token do YouTube |
-| Sem mídia obtida | URL inválida, conteúdo privado, bloqueado ou não suportado | Confirme a URL, use `cookies.txt` da sua própria conta se necessário e atualize o yt-dlp |
-| Sem escrita em temporários | Apache sem permissão em `storage/tmp/` | Dê permissão de escrita à conta que executa o Apache |
+| `yt-dlp.exe` not found | Incomplete extraction or deleted file | Re-extract the package and check `tools/yt-dlp.exe` |
+| Cannot merge audio into MP4 / convert to MP3 | FFmpeg missing | Check `tools/ffmpeg.exe` |
+| Extractor fails to start | `proc_open` blocked by PHP | Remove it from `disable_functions`, restart Apache |
+| Error creating ZIP | ZIP extension disabled | Enable `extension=zip` in `php.ini` |
+| YouTube HTTP 403 | Media stream refused; the app retries a compatibility MP4 | Reload the video page in your browser and upload a fresh `cookies.txt` from your own session; some videos may require a YouTube PO Token |
+| No media obtained | Invalid, private, blocked or unsupported URL | Check the URL, use your own `cookies.txt` if needed, update yt-dlp |
+| Cannot write temp files | Apache lacks permission on `storage/tmp/` | Grant write access to the account running Apache |
 
-## Estrutura entregue
+## Related projects
 
-```text
-multisite-video-downloader-xampp/
-├── api/
-│   ├── download.php
-│   └── info.php
-├── assets/
-│   ├── css/app.css
-│   └── js/app.js
-├── lib/YtDlpService.php
-├── storage/tmp/.gitkeep
-├── tools/
-│   ├── ffmpeg.exe
-│   └── yt-dlp.exe
-├── .htaccess
-├── config.php
-├── index.php
-└── README.md
-```
+- [**MediaForge**](https://github.com/josepires-dev/MediaForge): offline media converter for Windows (WinUI 3) with a ready-to-run installer.
+- [**UniversalConverter**](https://github.com/josepires-dev/UniversalConverter): local PHP/Apache converter for images, documents, audio and video.
 
-O pacote inclui o binário nightly oficial do `yt-dlp` para Windows. Não inclui sessões, cookies, cache Python, bytecode nem ambiente virtual do projeto original.
+## License
+
+[MIT](LICENSE). `yt-dlp` and `ffmpeg` are independent tools with their own licenses.
+
+If this project is useful to you, a ⭐ on the repo helps others find it.
